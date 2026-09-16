@@ -134,52 +134,23 @@ function renderMessage(message, isError = false) {
   );
 }
 
-/** プロフィールヘッダー（氏名・所属・学位・研究キーワード）を描画する．
- * @param {Object} profile
+/** 研究キーワードを「#キーワード」形式の一覧として描画する（該当データが無い場合は null）．
  * @param {Object[]} interests - research_interests の items
- * @returns {HTMLElement}
+ * @param {string} id
+ * @returns {HTMLElement|null}
  */
-function renderHeader(profile, interests) {
-  const nameJa = `${localizedText(profile.family_name)} ${localizedText(profile.given_name)}`.trim();
-  const nameEn = [profile.family_name?.en, profile.given_name?.en].filter(Boolean).join(" ");
-  const kana = [profile.family_name?.["ja-Kana"], profile.given_name?.["ja-Kana"]].filter(Boolean).join(" ");
-
-  const affiliation = Array.isArray(profile.affiliations) ? profile.affiliations[0] : null;
-  const degree = Array.isArray(profile.degrees) ? profile.degrees[0] : null;
-
+function renderKeywordsSection(interests, id) {
+  if (!interests || interests.length === 0) return null;
   const children = [];
-  children.push(el("p", { className: "name-ja", children: [nameJa || localizedText(profile.family_name)] }));
-  if (kana) children.push(el("p", { className: "name-kana", children: [kana] }));
-  if (nameEn) children.push(el("p", { className: "name-en", children: [nameEn] }));
-
-  if (affiliation) {
-    const parts = [
-      localizedText(affiliation.affiliation),
-      localizedText(affiliation.section),
-    ].filter(Boolean);
-    const job = localizedText(affiliation.job);
-    children.push(
-      el("p", {
-        className: "profile-affiliation",
-        children: [parts.join(" ") + (job ? "　" : ""), job ? el("span", { className: "job", children: [job] }) : ""],
-      })
-    );
-  }
-
-  if (degree) {
-    const degreeText = localizedText(degree.degree);
-    if (degreeText) children.push(el("p", { className: "profile-degree", children: [degreeText] }));
-  }
-
-  if (interests.length > 0) {
-    const list = el("ul", {
-      className: "keyword-list",
-      children: interests.map((i) => el("li", { children: [localizedText(i.keyword)] })),
-    });
-    children.push(list);
-  }
-
-  return el("header", { className: "profile-header", children });
+  interests.forEach((i, index) => {
+    if (index > 0) children.push("　"); // 全角スペースで区切る
+    children.push(`#${localizedText(i.keyword)}`);
+  });
+  return el("section", {
+    className: "section",
+    attrs: { id },
+    children: [el("h2", { children: ["研究キーワード"] }), el("p", { className: "keyword-line", children })],
+  });
 }
 
 /** 汎用の一覧セクションを描画する（該当データが0件の場合は null を返す）．
@@ -351,9 +322,8 @@ async function main() {
     return;
   }
 
-  let profile;
   try {
-    profile = await fetchProfile(permalink);
+    await fetchProfile(permalink); // permalinkの有効性確認を兼ねる
   } catch (err) {
     renderMessage(
       `researchmap から情報を取得できませんでした（permalink: ${permalink}）。permalinkが正しいか、researchmap側で情報が公開されているかをご確認ください。`,
@@ -389,6 +359,12 @@ async function main() {
     [...items].sort((a, b) => String(b[dateField] || "").localeCompare(String(a[dateField] || "")));
 
   const sectionDefs = [
+    {
+      id: "section-keywords",
+      label: "研究キーワード",
+      items: data.research_interests,
+      build: () => renderKeywordsSection(data.research_interests, "section-keywords"),
+    },
     { id: "section-experience", label: "経歴", items: data.research_experience, render: renderExperience },
     { id: "section-education", label: "学歴", items: data.education, render: renderEducation },
     { id: "section-associations", label: "所属学会", items: data.association_memberships, render: renderAssociation },
@@ -422,13 +398,16 @@ async function main() {
   ];
 
   const renderedSections = sectionDefs
-    .map((def) => ({ id: def.id, label: def.label, node: renderSection(def.label, def.items, def.render, def.id) }))
+    .map((def) => ({
+      id: def.id,
+      label: def.label,
+      node: def.build ? def.build() : renderSection(def.label, def.items, def.render, def.id),
+    }))
     .filter((s) => s.node !== null);
 
   const failedEndpoints = endpoints.filter((_, i) => results[i].status === "rejected");
 
   const container = document.createDocumentFragment();
-  container.append(renderHeader(profile, data.research_interests));
 
   const toc = renderToc(renderedSections);
   if (toc) container.append(toc);
