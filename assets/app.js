@@ -28,19 +28,6 @@ function localizedText(field) {
   return typeof values[0] === "string" ? values[0] : "";
 }
 
-/** 候補となるキーを順に確認し，最初に見つかったローカライズ済みテキストを返す．
- * @param {Object} item - APIから取得した1件のレコード
- * @param {string[]} keys - 優先順に確認するフィールド名の配列
- * @returns {string}
- */
-function pickText(item, keys) {
-  for (const key of keys) {
-    const text = localizedText(item[key]);
-    if (text) return text;
-  }
-  return "";
-}
-
 /** 人名リストのフィールド（{ja: [{name}], en: [{name}]}）から表示用の配列を取り出す．
  * @param {Object|undefined} field
  * @returns {string[]}
@@ -284,17 +271,17 @@ function renderExperience(e) {
 }
 
 function renderEducation(e) {
-  const title = pickText(e, ["school_name", "graduate_school_name", "department", "major"]);
-  const meta = [pickText(e, ["department", "major"]), formatPeriod(e.from_date, e.to_date)]
+  const title = localizedText(e.affiliation);
+  const meta = [localizedText(e.department), localizedText(e.course), formatPeriod(e.from_date, e.to_date)]
     .filter(Boolean)
     .join("，");
   return itemLi(title, meta);
 }
 
 function renderAward(a) {
-  const title = pickText(a, ["award_name", "prize_name"]);
-  const meta = [pickText(a, ["award_organization", "association"]), a.award_date || a.date].filter(Boolean).join("，");
-  return itemLi(title, meta);
+  const winners = localizedNameList(a.winners).join(", ");
+  const meta = [winners, localizedText(a.association), a.award_date].filter(Boolean).join("，");
+  return itemLi(localizedText(a.award_name), meta);
 }
 
 function renderMisc(m) {
