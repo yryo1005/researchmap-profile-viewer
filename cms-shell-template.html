@@ -1,0 +1,26 @@
+<!--
+  CMSの「埋め込みHTML」欄にこのままコピー＆ペーストしてください。
+  {{PERMALINK}} の部分だけを、対象教員のresearchmap permalinkに書き換えれば使えます。
+  permalinkの調べ方はREADME.mdを参照してください。
+
+  この <script> はページの高さを自動調整するためのものです。
+  埋め込み先のCMSがHTML欄内の<script>実行を許可している必要があります。
+-->
+<iframe
+  id="researchmap-profile-viewer-{{PERMALINK}}"
+  src="https://<GitHubユーザー名>.github.io/<リポジトリ名>/?permalink={{PERMALINK}}"
+  style="width: 100%; border: 0; display: block;"
+  loading="lazy"
+  title="researchmap プロフィール"
+></iframe>
+<script>
+  (function () {
+    var iframe = document.getElementById("researchmap-profile-viewer-{{PERMALINK}}");
+    if (!iframe) return;
+    window.addEventListener("message", function (event) {
+      if (!event.data || event.data.type !== "researchmap-profile-viewer:resize") return;
+      if (event.source !== iframe.contentWindow) return;
+      iframe.style.height = event.data.height + "px";
+    });
+  })();
+</script>

@@ -1,0 +1,12 @@
+tokens.json
+tokens.json.enc
+
+# 個人のAI開発ワークフロー用ディレクトリ（本リポジトリの成果物には含めない）
+.ai/
+.orders/
+.logs/
+.reports/
+AGENTS.md
+CLAUDE.md
+document.md
+.gitmodules
