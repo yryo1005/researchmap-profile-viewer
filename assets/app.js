@@ -186,12 +186,29 @@ function renderHeader(profile, interests) {
  * @param {string} heading
  * @param {Object[]} items
  * @param {(item: Object) => HTMLElement} renderItem
+ * @param {string} id - ページ内リンクの遷移先とするid属性
  * @returns {HTMLElement|null}
  */
-function renderSection(heading, items, renderItem) {
+function renderSection(heading, items, renderItem, id) {
   if (!items || items.length === 0) return null;
   const list = el("ul", { className: "item-list", children: items.map(renderItem) });
-  return el("section", { className: "section", children: [el("h2", { children: [heading] }), list] });
+  return el("section", {
+    className: "section",
+    attrs: { id },
+    children: [el("h2", { children: [heading] }), list],
+  });
+}
+
+/** ページ上部の目次（クリックで各セクションへ遷移するリンク一覧）を描画する．
+ * @param {{id: string, label: string}[]} sectionDefs - 実際に描画されたセクションのみ
+ * @returns {HTMLElement|null}
+ */
+function renderToc(sectionDefs) {
+  if (sectionDefs.length === 0) return null;
+  const links = sectionDefs.map((def) =>
+    el("li", { children: [el("a", { attrs: { href: `#${def.id}` }, children: [def.label] })] })
+  );
+  return el("nav", { className: "toc", attrs: { "aria-label": "目次" }, children: [el("ul", { children: links })] });
 }
 
 /** 業績1件分の <li> を組み立てる共通ヘルパー．
@@ -302,8 +319,28 @@ function setUpResizeNotifier() {
   notify();
 }
 
+/** 目次リンクのクリックで対象セクションへスムーズスクロールする．
+ * iframe埋め込み時は，iframe自体には内部スクロール領域が無い（高さが自動追従するため）
+ * ので，親ウィンドウ側にスクロールしてもらうよう postMessage で依頼する．
+ */
+function setUpTocScrolling() {
+  app.addEventListener("click", (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+    const target = document.getElementById(link.getAttribute("href").slice(1));
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.self !== window.top) {
+      const top = target.getBoundingClientRect().top + window.scrollY;
+      window.parent.postMessage({ type: "researchmap-profile-viewer:scroll-to", top }, "*");
+    }
+  });
+}
+
 async function main() {
   setUpResizeNotifier();
+  setUpTocScrolling();
 
   const permalink = getPermalink();
   if (!permalink) {
@@ -351,23 +388,50 @@ async function main() {
   const sortByDateDesc = (items, dateField) =>
     [...items].sort((a, b) => String(b[dateField] || "").localeCompare(String(a[dateField] || "")));
 
-  const sections = [
-    renderSection("経歴", data.research_experience, renderExperience),
-    renderSection("学歴", data.education, renderEducation),
-    renderSection("所属学会", data.association_memberships, renderAssociation),
-    renderSection("論文", sortByDateDesc(data.published_papers, "publication_date"), renderPaper),
-    renderSection("著書", sortByDateDesc(data.books_etc, "publication_date"), renderBook),
-    renderSection("その他の業績（MISC）", sortByDateDesc(data.misc, "publication_date"), renderMisc),
-    renderSection("講演・発表", sortByDateDesc(data.presentations, "publication_date"), renderPresentation),
-    renderSection("競争的資金・研究課題", data.research_projects, renderResearchProject),
-    renderSection("委員歴", data.committee_memberships, renderCommittee),
-    renderSection("受賞", data.awards, renderAward),
-  ].filter(Boolean);
+  const sectionDefs = [
+    { id: "section-experience", label: "経歴", items: data.research_experience, render: renderExperience },
+    { id: "section-education", label: "学歴", items: data.education, render: renderEducation },
+    { id: "section-associations", label: "所属学会", items: data.association_memberships, render: renderAssociation },
+    {
+      id: "section-papers",
+      label: "論文",
+      items: sortByDateDesc(data.published_papers, "publication_date"),
+      render: renderPaper,
+    },
+    { id: "section-books", label: "著書", items: sortByDateDesc(data.books_etc, "publication_date"), render: renderBook },
+    {
+      id: "section-misc",
+      label: "その他の業績（MISC）",
+      items: sortByDateDesc(data.misc, "publication_date"),
+      render: renderMisc,
+    },
+    {
+      id: "section-presentations",
+      label: "講演・発表",
+      items: sortByDateDesc(data.presentations, "publication_date"),
+      render: renderPresentation,
+    },
+    {
+      id: "section-projects",
+      label: "競争的資金・研究課題",
+      items: data.research_projects,
+      render: renderResearchProject,
+    },
+    { id: "section-committees", label: "委員歴", items: data.committee_memberships, render: renderCommittee },
+    { id: "section-awards", label: "受賞", items: data.awards, render: renderAward },
+  ];
+
+  const renderedSections = sectionDefs
+    .map((def) => ({ id: def.id, label: def.label, node: renderSection(def.label, def.items, def.render, def.id) }))
+    .filter((s) => s.node !== null);
 
   const failedEndpoints = endpoints.filter((_, i) => results[i].status === "rejected");
 
   const container = document.createDocumentFragment();
   container.append(renderHeader(profile, data.research_interests));
+
+  const toc = renderToc(renderedSections);
+  if (toc) container.append(toc);
 
   if (failedEndpoints.length > 0) {
     container.append(
@@ -380,7 +444,7 @@ async function main() {
     );
   }
 
-  sections.forEach((section) => container.append(section));
+  renderedSections.forEach((s) => container.append(s.node));
 
   container.append(
     el("footer", {

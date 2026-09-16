@@ -1,26 +1,40 @@
 <!--
   CMSの「埋め込みHTML」欄にこのままコピー＆ペーストしてください。
-  {{PERMALINK}} の部分だけを、対象教員のresearchmap permalinkに書き換えれば使えます。
+  書き換える箇所は下の PERMALINK の行1箇所だけです。
   permalinkの調べ方はREADME.mdを参照してください。
 
-  この <script> はページの高さを自動調整するためのものです。
-  埋め込み先のCMSがHTML欄内の<script>実行を許可している必要があります。
+  この <script> は、
+  1) 高さをページ本文に合わせて自動調整する
+  2) ページ上部の目次リンクをクリックしたときに、埋め込み先ページごとスクロールする
+  ために使っています。埋め込み先のCMSがHTML欄内の<script>実行を許可している必要があります。
 -->
-<iframe
-  id="researchmap-profile-viewer-{{PERMALINK}}"
-  src="https://<GitHubユーザー名>.github.io/<リポジトリ名>/?permalink={{PERMALINK}}"
-  style="width: 100%; border: 0; display: block;"
-  loading="lazy"
-  title="researchmap プロフィール"
-></iframe>
+<div class="researchmap-profile-viewer"></div>
 <script>
   (function () {
-    var iframe = document.getElementById("researchmap-profile-viewer-{{PERMALINK}}");
-    if (!iframe) return;
+    var PERMALINK = "{{PERMALINK}}"; // ここだけ書き換えれば使えます
+    var BASE_URL = "https://<GitHubユーザー名>.github.io/<リポジトリ名>/";
+
+    var container = document.currentScript.previousElementSibling;
+    var iframe = document.createElement("iframe");
+    iframe.src = BASE_URL + "?permalink=" + encodeURIComponent(PERMALINK);
+    iframe.style.width = "100%";
+    iframe.style.border = "0";
+    iframe.style.display = "block";
+    iframe.loading = "lazy";
+    iframe.title = "researchmap プロフィール";
+    container.appendChild(iframe);
+
     window.addEventListener("message", function (event) {
-      if (!event.data || event.data.type !== "researchmap-profile-viewer:resize") return;
-      if (event.source !== iframe.contentWindow) return;
-      iframe.style.height = event.data.height + "px";
+      if (!event.data || event.source !== iframe.contentWindow) return;
+
+      if (event.data.type === "researchmap-profile-viewer:resize") {
+        iframe.style.height = event.data.height + "px";
+      }
+
+      if (event.data.type === "researchmap-profile-viewer:scroll-to") {
+        var iframeTop = iframe.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: iframeTop + event.data.top, behavior: "smooth" });
+      }
     });
   })();
 </script>
