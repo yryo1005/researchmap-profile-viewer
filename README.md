@@ -23,8 +23,8 @@ researchmap の公開APIはCORS（`Access-Control-Allow-Origin: *`）を許可�
 ## 教員1人分をCMSに追加する手順
 
 1. [`cms-shell-template.html`](cms-shell-template.html) の内容をコピーする。
-2. ファイル中の `var PERMALINK = "{{PERMALINK}}";` の行を、対象教員のpermalinkに書き換える（**1箇所だけ**）。
-3. `var BASE_URL` の行は、すでにこのリポジトリのGitHub Pages URL（`https://yryo1005.github.io/researchmap-profile-viewer/`）に設定済みなので、通常は書き換え不要。
+2. `<iframe>` タグの `data-permalink="{{PERMALINK}}"` の値を、対象教員のpermalinkに書き換える（**1箇所だけ**）。
+3. `BASE_URL` は、すでにこのリポジトリのGitHub Pages URL（`https://yryo1005.github.io/researchmap-profile-viewer/`）に設定済みなので、通常は書き換え不要。
 4. 完成したHTMLを、CMSの「埋め込みHTML」欄にそのまま貼り付ける。
 
 これだけで、このリポジトリに一切手を加えることなく、新しい教員のページを追加できます。
