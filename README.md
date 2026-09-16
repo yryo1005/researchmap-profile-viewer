@@ -6,7 +6,7 @@ CMSの「埋め込みHTML」欄に、iframeと対象教員の researchmap permal
 
 ## 仕組み
 
-1. このリポジトリを GitHub Pages で公開すると、`https://<ユーザー名>.github.io/<リポジトリ名>/` という1つの汎用ページができます。
+1. このリポジトリを GitHub Pages で公開すると、`https://yryo1005.github.io/researchmap-profile-viewer/` という1つの汎用ページができます。
 2. CMS側のiframeで、このページのURLに `?permalink=<対象教員のpermalink>` というクエリパラメータを付けて埋め込みます。
 3. ページ自身のJavaScriptが、ブラウザ上で直接 `https://api.researchmap.jp/<permalink>/...` にアクセスし、取得結果をその場で描画します。
 
@@ -24,7 +24,7 @@ researchmap の公開APIはCORS（`Access-Control-Allow-Origin: *`）を許可�
 
 1. [`cms-shell-template.html`](cms-shell-template.html) の内容をコピーする。
 2. ファイル中の `var PERMALINK = "{{PERMALINK}}";` の行を、対象教員のpermalinkに書き換える（**1箇所だけ**）。
-3. `var BASE_URL = "https://<GitHubユーザー名>.github.io/<リポジトリ名>/";` の行を、実際に公開したGitHub PagesのURLに書き換える（これは全教員共通なので、最初に1回書き換えれば以降はコピーするだけでよい）。
+3. `var BASE_URL` の行は、すでにこのリポジトリのGitHub Pages URL（`https://yryo1005.github.io/researchmap-profile-viewer/`）に設定済みなので、通常は書き換え不要。
 4. 完成したHTMLを、CMSの「埋め込みHTML」欄にそのまま貼り付ける。
 
 これだけで、このリポジトリに一切手を加えることなく、新しい教員のページを追加できます。
