@@ -370,20 +370,20 @@ async function main() {
     { id: "section-associations", label: "所属学会", items: data.association_memberships, render: renderAssociation },
     {
       id: "section-papers",
-      label: "論文",
+      label: `論文（${data.published_papers.length}件）`,
       items: sortByDateDesc(data.published_papers, "publication_date"),
       render: renderPaper,
     },
     { id: "section-books", label: "著書", items: sortByDateDesc(data.books_etc, "publication_date"), render: renderBook },
     {
       id: "section-misc",
-      label: "その他の業績（MISC）",
+      label: `その他の業績（MISC）（${data.misc.length}件）`,
       items: sortByDateDesc(data.misc, "publication_date"),
       render: renderMisc,
     },
     {
       id: "section-presentations",
-      label: "講演・発表",
+      label: `講演・発表（${data.presentations.length}件）`,
       items: sortByDateDesc(data.presentations, "publication_date"),
       render: renderPresentation,
     },
